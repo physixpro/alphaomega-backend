@@ -1,72 +1,50 @@
-const express = require('express') 
-const mongoose = require('mongoose')
-const cors = require('cors')
-const app = express();
-app.use(cors());
-
-// gives us the ability to parse/decipher a post request 
+const express = require("express")
+const mongoose = require("mongoose")
+const cors = require("cors")
+const { application } = require("express")
+const app = express()
+app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
+const ObjectID = require('mongodb').ObjectID
 
-mongoose.connect('mongodb+srv://data:1234@cluster0.qvhok.mongodb.net/Facebook?retryWrites=true&w=majority',{useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect('mongodb+srv://data:1234@cluster0.qvhok.mongodb.net/Facebook?retryWrites=true&w=majority', {useUnifiedTopology:true, useNewUrlParser:true})
 const db = mongoose.connection
 
 db.on('error', console.error.bind(console, 'connection error'))
-db.once('open', function callback (){
-    console.log('Database is up and running')
+db.once('open',function callback () {
+    console.log("database is up and running")
+} )
+
+app.post('/users',  async (req,res) => {
+    const newUser = req.body
+    const x = await db.collection('users').insertOne(newUser)
+    res.json("user successfully added to database")
+    console.log(newUser)
 })
 
-
-app.get('/', async(req,res)=> {
-    const feed = await db.collection('feed').find({}).toArray()
-    res.json(feed)
+app.get('/users', async(req,res)  => {
+    const getUsers = await db.collection('users').find({}).toArray()
+    res.json(getUsers)
+    console.log(getUsers)
 })
 
-// user hits send to localhost3001/michael 
-app.get('/:name', async(req,res) => {
-    // retreiving the name from the url and storring in variable called name
-    const name = req.params.name 
-    // putting condition inside curly braces , only find docs that are equal to the name in the url .
-    const feed = await db.collection('feed').find({name:name}).toArray()
-    res.json(feed)
+app.get('/users/:name', async(req,res) => {
+    const name = req.params.name
+    const info = await db.collection('users').find({name:name}).toArray()
+    res.json(info);
+})
+app.get('/users/:userId', async(req,res) => {
+    const id = req.params.userId
+    const info = await db.collection('users').find({userId:userId}).toArray()
+    res.json(info)
 })
 
-// we have to " differntiate between the two routes " because to the server they will look the same without specificying additional path
-
-// first route may be anything but it is best practice to call it the same name as what you're trying to find,
-
-app.get('/status/:status', async(req,res) => {
-    const status = req.params.status
-    const feed = await db.collection('feed').find({status:status}).toArray()
-    res.json(feed)
+app.delete('/users/:userId', async(req,res) => {
+    const id = req.params.userId
+    const x = await db.collection('users').deleteOne({_id: new ObjectID (id)})
+    res.json('user deleted')
 })
 
-
-// Every request needs a response(duh)
-app.post('/feed', async (req,res) => {
-    // data is an object 
-    const message = req.body;
-    const x = await db.collection('feed').insertOne(message)
-    console.log(message)
-    res.json('hello')
-})
-
-app.post('/user', async (req,res) => {
-    //info that user fills is stored in the req.body(duh) 
-    const user = req.body
-    const x = await db.collection('users').insertOne(user)
-    res.json('A user was created!')
-})
-
-
-
-const port = process.env.PORT || 3001;
-app.listen(port, () => console.log(`Listening on port ${port}...`))
-
-
-
-//utilize placeholders to grab certain info.
-
-//create a new collection and add things via postman/code 
-
-//How to finish the register form?
+const port = process.env.PORT || 3001
+app.listen (port, () => console.log(`server is running on port ${port}... `))
